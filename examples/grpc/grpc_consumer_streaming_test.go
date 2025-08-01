@@ -14,24 +14,18 @@ import (
 	"time"
 
 	"github.com/pact-foundation/pact-go/v2/examples/grpc/routeguide"
-	"github.com/pact-foundation/pact-go/v2/log"
-	"github.com/hashicorp/logutils"
 	message "github.com/pact-foundation/pact-go/v2/message/v4"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-func setupGrpcPact(t *testing.T, logLevel ...string) (*message.SynchronousPact, string) {
+func setupGrpcPact(t *testing.T) (*message.SynchronousPact, string) {
 	p, _ := message.NewSynchronousPact(message.Config{
 		Consumer: "grpcconsumer",
 		Provider: "grpcprovider",
 		PactDir:  filepath.ToSlash(fmt.Sprintf("%s/../pacts", dir)),
 	})
-	
-	if len(logLevel) > 0 {
-		log.SetLogLevel(logutils.LogLevel(logLevel[0]))
-	}
 
 	dir, _ := os.Getwd()
 	protoPath := fmt.Sprintf("%s/routeguide/route_guide.proto", strings.ReplaceAll(dir, "\\", "/"))

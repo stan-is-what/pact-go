@@ -125,7 +125,7 @@ func TestGetFeatureError(t *testing.T) {
 }
 
 func TestSaveFeature(t *testing.T) {
-	p, path := setupGrpcPact(t, "INFO")
+	p, path := setupGrpcPact(t)
 
 	grpcInteraction := `{
 		"pact:proto": "` + path + `",
