@@ -6,49 +6,15 @@ package grpc
 import (
 	"context"
 	"fmt"
-	"os"
-	"path/filepath"
-	"strings"
 	"testing"
 	"time"
 
 	"github.com/pact-foundation/pact-go/v2/examples/grpc/routeguide"
-	"github.com/pact-foundation/pact-go/v2/log"
 	message "github.com/pact-foundation/pact-go/v2/message/v4"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 )
 
-func setupGrpcPact(t *testing.T, logLevel ...string) (*message.SynchronousPact, string) {
-	p, _ := message.NewSynchronousPact(message.Config{
-		Consumer: "grpcconsumer",
-		Provider: "grpcprovider",
-		PactDir:  filepath.ToSlash(fmt.Sprintf("%s/../pacts", dir)),
-	})
-	
-	level := "DEBUG"
-	if len(logLevel) > 0 {
-		level = logLevel[0]
-	}
-	log.SetLogLevel(level)
-
-	dir, _ := os.Getwd()
-	protoPath := fmt.Sprintf("%s/routeguide/route_guide.proto", strings.ReplaceAll(dir, "\\", "/"))
-	
-	return p, protoPath
-}
-
-func createGrpcClient(transport message.TransportConfig, t *testing.T) routeguide.RouteGuideClient {
-	conn, err := grpc.NewClient(fmt.Sprintf("127.0.0.1:%d", transport.Port), grpc.WithTransportCredentials(insecure.NewCredentials()))
-	if err != nil {
-		t.Fatal("unable to communicate to grpc server", err)
-	}
-	t.Cleanup(func() { conn.Close() })
-	
-	return routeguide.NewRouteGuideClient(conn)
-}
 
 func TestGetFeatureSuccess(t *testing.T) {
 	p, path := setupGrpcPact(t)
@@ -81,15 +47,7 @@ func TestGetFeatureSuccess(t *testing.T) {
 		ExecuteTest(t, func(transport message.TransportConfig, m message.SynchronousMessage) error {
 			fmt.Println("gRPC transport running on", transport)
 
-			// Establish the gRPC connection
-			conn, err := grpc.NewClient(fmt.Sprintf("127.0.0.1:%d", transport.Port), grpc.WithTransportCredentials(insecure.NewCredentials()))
-			if err != nil {
-				t.Fatal("unable to communicate to grpc server", err)
-			}
-			defer conn.Close()
-
-			// Create the gRPC client
-			c := routeguide.NewRouteGuideClient(conn)
+			c := createGrpcClient(transport, t)
 
 			point := &routeguide.Point{
 				Latitude:  180,
@@ -153,7 +111,7 @@ func TestGetFeatureError(t *testing.T) {
 			// Now we can make a normal gRPC request
 			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 			defer cancel()
-			_, err = c.GetFeature(ctx, point)
+			_, err := c.GetFeature(ctx, point)
 
 			require.Error(t, err)
 			// TODO: uncomment once new FFI and new pact-protobuf plugin are released with a fix
@@ -200,15 +158,7 @@ func TestSaveFeature(t *testing.T) {
 		ExecuteTest(t, func(transport message.TransportConfig, m message.SynchronousMessage) error {
 			fmt.Println("gRPC transport running on", transport)
 
-			// Establish the gRPC connection
-			conn, err := grpc.NewClient(fmt.Sprintf("127.0.0.1:%d", transport.Port), grpc.WithTransportCredentials(insecure.NewCredentials()))
-			if err != nil {
-				t.Fatal("unable to communicate to grpc server", err)
-			}
-			defer conn.Close()
-
-			// Create the gRPC client
-			c := routeguide.NewRouteGuideClient(conn)
+			c := createGrpcClient(transport, t)
 			feature := &routeguide.Feature{
 				Name: "A shed",
 				Location: &routeguide.Point{

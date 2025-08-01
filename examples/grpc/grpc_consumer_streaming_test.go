@@ -15,6 +15,7 @@ import (
 
 	"github.com/pact-foundation/pact-go/v2/examples/grpc/routeguide"
 	"github.com/pact-foundation/pact-go/v2/log"
+	"github.com/hashicorp/logutils"
 	message "github.com/pact-foundation/pact-go/v2/message/v4"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc"
@@ -28,11 +29,11 @@ func setupGrpcPact(t *testing.T, logLevel ...string) (*message.SynchronousPact, 
 		PactDir:  filepath.ToSlash(fmt.Sprintf("%s/../pacts", dir)),
 	})
 	
-	level := "DEBUG"
+	logLevelStr := "DEBUG"
 	if len(logLevel) > 0 {
-		level = logLevel[0]
+		logLevelStr = logLevel[0]
 	}
-	log.SetLogLevel(level)
+	log.SetLogLevel(logutils.LogLevel(logLevelStr))
 
 	dir, _ := os.Getwd()
 	protoPath := fmt.Sprintf("%s/routeguide/route_guide.proto", strings.ReplaceAll(dir, "\\", "/"))
@@ -87,13 +88,7 @@ func TestListFeatures(t *testing.T) {
 		ExecuteTest(t, func(transport message.TransportConfig, m message.SynchronousMessage) error {
 			fmt.Println("gRPC transport running on", transport)
 
-			conn, err := grpc.NewClient(fmt.Sprintf("127.0.0.1:%d", transport.Port), grpc.WithTransportCredentials(insecure.NewCredentials()))
-			if err != nil {
-				t.Fatal("unable to communicate to grpc server", err)
-			}
-			defer conn.Close()
-
-			c := routeguide.NewRouteGuideClient(conn)
+			c := createGrpcClient(transport, t)
 
 			rect := &routeguide.Rectangle{
 				Lo: &routeguide.Point{
@@ -166,13 +161,7 @@ func TestRecordRoute(t *testing.T) {
 		ExecuteTest(t, func(transport message.TransportConfig, m message.SynchronousMessage) error {
 			fmt.Println("gRPC transport running on", transport)
 
-			conn, err := grpc.NewClient(fmt.Sprintf("127.0.0.1:%d", transport.Port), grpc.WithTransportCredentials(insecure.NewCredentials()))
-			if err != nil {
-				t.Fatal("unable to communicate to grpc server", err)
-			}
-			defer conn.Close()
-
-			c := routeguide.NewRouteGuideClient(conn)
+			c := createGrpcClient(transport, t)
 
 			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 			defer cancel()
@@ -243,13 +232,7 @@ func TestRouteChat(t *testing.T) {
 		ExecuteTest(t, func(transport message.TransportConfig, m message.SynchronousMessage) error {
 			fmt.Println("gRPC transport running on", transport)
 
-			conn, err := grpc.NewClient(fmt.Sprintf("127.0.0.1:%d", transport.Port), grpc.WithTransportCredentials(insecure.NewCredentials()))
-			if err != nil {
-				t.Fatal("unable to communicate to grpc server", err)
-			}
-			defer conn.Close()
-
-			c := routeguide.NewRouteGuideClient(conn)
+			c := createGrpcClient(transport, t)
 
 			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 			defer cancel()
