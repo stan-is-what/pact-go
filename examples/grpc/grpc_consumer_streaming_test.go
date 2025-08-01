@@ -29,11 +29,9 @@ func setupGrpcPact(t *testing.T, logLevel ...string) (*message.SynchronousPact, 
 		PactDir:  filepath.ToSlash(fmt.Sprintf("%s/../pacts", dir)),
 	})
 	
-	logLevelStr := "DEBUG"
 	if len(logLevel) > 0 {
-		logLevelStr = logLevel[0]
+		log.SetLogLevel(logutils.LogLevel(logLevel[0]))
 	}
-	log.SetLogLevel(logutils.LogLevel(logLevelStr))
 
 	dir, _ := os.Getwd()
 	protoPath := fmt.Sprintf("%s/routeguide/route_guide.proto", strings.ReplaceAll(dir, "\\", "/"))
