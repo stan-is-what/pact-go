@@ -21,16 +21,37 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-func TestListFeatures(t *testing.T) {
+func setupGrpcPact(t *testing.T, logLevel ...string) (*message.SynchronousPact, string) {
 	p, _ := message.NewSynchronousPact(message.Config{
 		Consumer: "grpcconsumer",
 		Provider: "grpcprovider",
 		PactDir:  filepath.ToSlash(fmt.Sprintf("%s/../pacts", dir)),
 	})
-	log.SetLogLevel("DEBUG")
+	
+	level := "DEBUG"
+	if len(logLevel) > 0 {
+		level = logLevel[0]
+	}
+	log.SetLogLevel(level)
 
 	dir, _ := os.Getwd()
-	path := fmt.Sprintf("%s/routeguide/route_guide.proto", strings.ReplaceAll(dir, "\\", "/"))
+	protoPath := fmt.Sprintf("%s/routeguide/route_guide.proto", strings.ReplaceAll(dir, "\\", "/"))
+	
+	return p, protoPath
+}
+
+func createGrpcClient(transport message.TransportConfig, t *testing.T) routeguide.RouteGuideClient {
+	conn, err := grpc.NewClient(fmt.Sprintf("127.0.0.1:%d", transport.Port), grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		t.Fatal("unable to communicate to grpc server", err)
+	}
+	t.Cleanup(func() { conn.Close() })
+	
+	return routeguide.NewRouteGuideClient(conn)
+}
+
+func TestListFeatures(t *testing.T) {
+	p, path := setupGrpcPact(t)
 
 	grpcInteraction := `{
 		"pact:proto": "` + path + `",
@@ -116,15 +137,7 @@ func TestListFeatures(t *testing.T) {
 }
 
 func TestRecordRoute(t *testing.T) {
-	p, _ := message.NewSynchronousPact(message.Config{
-		Consumer: "grpcconsumer",
-		Provider: "grpcprovider",
-		PactDir:  filepath.ToSlash(fmt.Sprintf("%s/../pacts", dir)),
-	})
-	log.SetLogLevel("DEBUG")
-
-	dir, _ := os.Getwd()
-	path := fmt.Sprintf("%s/routeguide/route_guide.proto", strings.ReplaceAll(dir, "\\", "/"))
+	p, path := setupGrpcPact(t)
 
 	grpcInteraction := `{
 		"pact:proto": "` + path + `",
@@ -197,15 +210,7 @@ func TestRecordRoute(t *testing.T) {
 }
 
 func TestRouteChat(t *testing.T) {
-	p, _ := message.NewSynchronousPact(message.Config{
-		Consumer: "grpcconsumer",
-		Provider: "grpcprovider",
-		PactDir:  filepath.ToSlash(fmt.Sprintf("%s/../pacts", dir)),
-	})
-	log.SetLogLevel("DEBUG")
-
-	dir, _ := os.Getwd()
-	path := fmt.Sprintf("%s/routeguide/route_guide.proto", strings.ReplaceAll(dir, "\\", "/"))
+	p, path := setupGrpcPact(t)
 
 	grpcInteraction := `{
 		"pact:proto": "` + path + `",
